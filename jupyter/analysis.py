@@ -342,7 +342,7 @@ def pick_events(a, cri):
 			if match:
 				el.append(e)
 		if len(el)>0:
-			picked.append({'time': elist['time'], 'event':el})
+			picked.append({'time': elist['time'], 'event':sorted(el, key=lambda x: x['action'], reverse=True)}) # hack puts 'stop' before 'start' for correct order of MIDI events
 	return picked
 	
 	
