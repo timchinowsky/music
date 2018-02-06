@@ -1,5 +1,24 @@
 # Spotify analysis functions
 
+USER_ID = 'gracechinowsky'
+CLIENT_ID ='de884d7ced254bc999e0fda964b82934'
+CLIENT_SECRET='849c0fb9303a4cc19af7eadc960afff4'
+
+"""
+scope = 'user-read-playback-state,user-library-read,user-modify-playback-state'
+token = util.prompt_for_user_token(USER_ID,scope,client_id=CLIENT_ID,client_secret=CLIENT_SECRET,redirect_uri='https://www.google.com/')
+spotify = spotipy.Spotify(auth=token)
+spotify.current_playback()
+spotify.pause_playback()
+spotify.seek_track(0)
+spotify.start_playback()
+spotify.seek_track(0);spotify.start_playback()
+spotify.pause_playback();spotify.start_playback()
+spotify.pause_playback();spotify.seek_track(0);spotify.start_playback()
+spotify.pause_playback();spotify.seek_track(0);
+spotify.start_playback()
+history
+"""
 
 import spotipy
 import spotipy.util as util
@@ -71,7 +90,8 @@ def summarize(obj, ind='\t'):
 	
 def spotify_get(track, gettype):
 	scope = 'user-library-read'
-	token = util.prompt_for_user_token('5gc3kt2m0fhoq1bnadvaxzzo9',scope,client_id='7d1eac2d7f7c441c8ddfe339296e2e00',client_secret='1032f5fd209c49d9a69dde6e39dafaad',redirect_uri='https://www.google.com/')
+	# token = util.prompt_for_user_token('5gc3kt2m0fhoq1bnadvaxzzo9',scope,client_id='7d1eac2d7f7c441c8ddfe339296e2e00',client_secret='1032f5fd209c49d9a69dde6e39dafaad',redirect_uri='https://www.google.com/')
+	token = util.prompt_for_user_token(USER_ID,scope,client_id=CLIENT_ID,client_secret=CLIENT_SECRET,redirect_uri='https://www.google.com/')
 	spotify = spotipy.Spotify(auth=token)
 	analysis = spotify.audio_analysis(track)
 	r = analysis[gettype]
