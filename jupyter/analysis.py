@@ -4,21 +4,7 @@ USER_ID = 'gracechinowsky'
 CLIENT_ID ='de884d7ced254bc999e0fda964b82934'
 CLIENT_SECRET='849c0fb9303a4cc19af7eadc960afff4'
 
-"""
-scope = 'user-read-playback-state,user-library-read,user-modify-playback-state'
-token = util.prompt_for_user_token(USER_ID,scope,client_id=CLIENT_ID,client_secret=CLIENT_SECRET,redirect_uri='https://www.google.com/')
-spotify = spotipy.Spotify(auth=token)
-spotify.current_playback()
-spotify.pause_playback()
-spotify.seek_track(0)
-spotify.start_playback()
-spotify.seek_track(0);spotify.start_playback()
-spotify.pause_playback();spotify.start_playback()
-spotify.pause_playback();spotify.seek_track(0);spotify.start_playback()
-spotify.pause_playback();spotify.seek_track(0);
-spotify.start_playback()
-history
-"""
+
 
 import spotipy
 import spotipy.util as util
@@ -30,6 +16,25 @@ import sys
 import pretty_midi as pm
 import requests
 import pyperclip
+
+def spotify_ctrl():
+	scope = 'user-read-playback-state,user-library-read,user-modify-playback-state'
+	token = util.prompt_for_user_token(USER_ID,scope,client_id=CLIENT_ID,client_secret=CLIENT_SECRET,redirect_uri='https://www.google.com/')
+	spotify = spotipy.Spotify(auth=token)
+	return spotify
+
+"""
+spotify.current_playback()
+spotify.pause_playback()
+spotify.seek_track(0)
+spotify.start_playback()
+spotify.seek_track(0);spotify.start_playback()
+spotify.pause_playback();spotify.start_playback()
+spotify.pause_playback();spotify.seek_track(0);spotify.start_playback()
+spotify.pause_playback();spotify.seek_track(0);
+spotify.start_playback()
+history
+"""
 
 mpl.rcParams['figure.figsize'] = (16,4)
 
