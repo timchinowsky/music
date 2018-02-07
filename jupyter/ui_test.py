@@ -7,18 +7,94 @@ import os
 import gc
 import matplotlib
 matplotlib.use('WXAgg')
-import matplotlib.cm as cm
-import matplotlib.cbook as cbook
-from matplotlib.backends.backend_wxagg import Toolbar, FigureCanvasWxAgg
-from matplotlib.figure import Figure
+#import matplotlib.cm as cm
+#import matplotlib.cbook as cbook
+#from matplotlib.backends.backend_wxagg import Toolbar, FigureCanvasWxAgg
+#from matplotlib.figure import Figure
 import numpy as np
 import wx
 import wx.xrc as xrc
 import analysis as an
 
+
+from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
+from matplotlib.backends.backend_wx import NavigationToolbar2Wx
+from matplotlib.figure import Figure
+
+
+
 spotify = an.spotify_ctrl()
 frame = []
 plotpanel = None
+last_track_id = None
+track_name = None
+
+class CanvasPanel(wx.Panel):
+	def __init__(self, parent):
+		wx.Panel.__init__(self, parent)
+		self.figure = Figure()
+		self.axes1 = self.figure.add_subplot(211)
+		self.axes2 = self.figure.add_subplot(212)
+		self.canvas = FigureCanvas(self, -1, self.figure)
+		self.sizer = wx.BoxSizer(wx.VERTICAL)
+		self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
+		self.SetSizer(self.sizer)
+		# self.Fit()
+
+	def draw(self, track_id=None):
+		global spotify, track_name
+		if track_id is None:
+			t = np.arange(0.0, 3.0, 0.01)
+			s = np.sin(2 * np.pi * t)
+			self.axes1.plot(t, s)
+		else:
+			keys = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
+			modes =['minor', 'major']
+			a=spotify.audio_analysis(track_id)
+			n_bars = len(a['bars'])
+			n_segments = len(a['segments'])
+			n_beats = len(a['beats'])
+			n_tatums = len(a['tatums'])
+			# print n_bars,'bars, ', n_segments, 'segments,', n_beats, 'beats,', n_tatums, 'tatums'
+			bar_starts = [ k['start'] for k in a['bars'] ]
+			bar_ends = [ k['start']+k['duration'] for k in a['bars'] ]
+			segment_starts = [ k['start'] for k in a['segments'] ]
+			segment_ends = [ k['start']+k['duration'] for k in a['segments'] ]
+			beat_starts = [ k['start'] for k in a['beats'] ]
+			beat_ends = [ k['start']+k['duration'] for k in a['beats'] ]
+			tatum_starts = [ k['start'] for k in a['tatums'] ]
+			tatum_ends = [ k['start']+k['duration'] for k in a['tatums'] ]
+			bar_y=0
+			segment_y=1
+			beat_y=2
+			tatum_y=3
+			delta_y=0.5
+			self.axes1.clear()
+			self.axes1.plot([bar_starts, bar_ends], [[bar_y]*len(bar_starts), [bar_y+delta_y]*len(bar_starts)],'b-')
+			self.axes1.plot([segment_starts, segment_ends], [[segment_y]*len(segment_starts), [segment_y+delta_y]*len(segment_starts)], 'g-')
+			self.axes1.plot([beat_starts, beat_ends], [[beat_y]*len(beat_starts), [beat_y+delta_y]*len(beat_starts)], 'r-')
+			self.axes1.plot([tatum_starts, tatum_ends], [[tatum_y]*len(tatum_starts), [tatum_y+delta_y]*len(tatum_starts)], 'c-')
+			self.axes1.set_title('Bars, segments, beats, tatums for '+track_name)
+			
+			self.axes1.text(0,bar_y+delta_y/2, 'Bars', horizontalalignment='right')
+			self.axes1.text(0,segment_y+delta_y/2, 'Segments', horizontalalignment='right')
+			self.axes1.text(0,beat_y+delta_y/2, 'Beats', horizontalalignment='right')
+			self.axes1.text(0,tatum_y+delta_y/2, 'Tatums', horizontalalignment='right')
+			
+			sec = an.analysis_get(a, 'sections')
+
+			sec_ends = list(np.array(sec['start']) + np.array(sec['duration']))
+			self.axes2.clear()
+			self.axes2.plot([sec['start'],sec_ends], [sec['key'], list(np.array(sec['key'])+0)])
+			for s,k,m in zip(sec['start'],sec['key'],sec['mode']):
+				self.axes2.text(s,k,keys[k]+' '+modes[m])
+			self.axes2.set_title('Section times and keys')
+			self.axes2.set_xlabel('Time, s')
+			self.axes2.set_ylabel('Key')
+		
+
+
+
 def main():
 	global frame, plotpanel
 	ex = wx.App()
@@ -29,13 +105,15 @@ def main():
 	sizer = f.GetSizer()
 
 	# matplotlib panel itself
-	plotpanel = PlotPanel(f.m_panel1)
-	plotpanel.init_plot_data()
-
-	# wx boilerplate
-	sizer.Add(plotpanel, 1, wx.EXPAND)
-	f.SetSizer(sizer)
 	
+	panel = CanvasPanel(f)
+	panel.draw()
+	plotpanel=panel
+	
+	# wx boilerplate
+	sizer.Add(panel, 1, wx.EXPAND)
+	f.SetSizer(sizer)
+	f.Fit()
 	f.m_timer1.Start(1000)
 	f.Show()
 	ex.MainLoop()    
@@ -43,18 +121,23 @@ def main():
 string = ''
 url =  ''
 def update(obj):
-	global spotify, frame, string, url
+	global spotify, frame, string, url, last_track_id, track_name
 	d = spotify.current_playback()
-	caption = d['item']['name']+'\n'+d['item']['album']['name']+'\n'+ ', '.join([a['name'] for a in d['item']['album']['artists']])
+	current_track_id = d['item']['id']
+	track_name = d['item']['name']
+	caption = current_track_id+'\n'+d['item']['name']+'\n'+d['item']['album']['name']+'\n'+ ', '.join([a['name'] for a in d['item']['album']['artists']])
 	smallest = min([i['height'] for i in d['item']['album']['images']])
 	image_url = [i['url'] for i in d['item']['album']['images'] if i['height']==smallest][0]
 	url= image_url
-	
+	track_id = d['item']['id']
 	stream = cStringIO.StringIO(urllib2.urlopen(image_url).read())
 	bmp = wx.BitmapFromImage( wx.ImageFromStream( stream ))
 
 	frame.m_staticText1.SetLabel(caption)
 	frame.m_bitmap1.SetBitmap(bmp)
+	if not current_track_id==last_track_id:
+		last_track_id=current_track_id
+		plotpanel.draw(current_track_id)
 	
 	
 	
@@ -63,6 +146,7 @@ class PlotPanel(wx.Panel):
 		wx.Panel.__init__(self, parent, -1)
 
 		self.fig = Figure((5, 4), 75)
+		self.a = self.fig.add_subplot(111)
 		self.canvas = FigureCanvasWxAgg(self, -1, self.fig)
 		self.toolbar = Toolbar(self.canvas)  # matplotlib toolbar
 		self.toolbar.Realize()
@@ -78,21 +162,7 @@ class PlotPanel(wx.Panel):
 		self.Fit()
 
 	def init_plot_data(self):
-		ERR_TOL = 1e-6
-		a = self.fig.add_subplot(111)
-
-		x = np.arange(120.0) * 2 * np.pi / 60.0
-		y = np.arange(100.0) * 2 * np.pi / 50.0
-		self.x, self.y = np.meshgrid(x, y)
-		z = np.sin(self.x) + np.cos(self.y)
-		self.im = a.imshow(z, cmap=cm.RdBu)  # , interpolation='nearest')
-
-		zmax = np.amax(z) - ERR_TOL
-		ymax_i, xmax_i = np.nonzero(z >= zmax)
-		if self.im.origin == 'upper':
-			ymax_i = z.shape[0] - ymax_i
-		self.lines = a.plot(xmax_i, ymax_i, 'ko')
-
+		self.lines = self.a.plot([1,2,3,4,5], [1,4,9,16,25], 'ko')
 		self.toolbar.update()  # Not sure why this is needed - ADS
 
 	def GetToolBar(self):
