@@ -265,19 +265,21 @@ def chord_tones(chord_name, octaves=[4]):
 				n += notes
 		return n
 
-
-
 def spotify_analysis(track):
-	scope = 'user-library-read'
-	token = util.prompt_for_user_token('5gc3kt2m0fhoq1bnadvaxzzo9',scope,client_id='7d1eac2d7f7c441c8ddfe339296e2e00',client_secret='1032f5fd209c49d9a69dde6e39dafaad',redirect_uri='https://www.google.com/')
-	spotify = spotipy.Spotify(auth=token)
+	spotify = spotify_ctrl()
 	analysis = spotify.audio_analysis(track)
 	for s in analysis['sections']:
 		s['key_name']=key_name(s)
 		s['note']=chord_notes(s['key_name'])
 		s['tone']=chord_tones(s['key_name'])
-
 	return analysis 
+
+def analyze(id):
+	a=spotify_analysis(id)
+	event = []
+	analysis_events(a,event)
+	ecc=condense_events(sorted(event, key=lambda e: e['time']))
+	return ecc
 
 def section_analysis(track):
 	a = spotify_analysis(track)
@@ -338,13 +340,6 @@ def condense_events(events):
 		ec.append(e)
 	return ec
 
-def analyze(id):
-	a=spotify_analysis(id)
-	event = []
-	analysis_events(a,event)
-	ecc=condense_events(sorted(event, key=lambda e: e['time']))
-	return ecc
-	
 def timediffplot(ev):
 	t=np.array([e['time'] for e in ev])
 	dt = np.diff(t)

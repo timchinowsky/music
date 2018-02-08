@@ -16,12 +16,11 @@ import wx
 import wx.xrc as xrc
 import analysis as an
 
-
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
 from matplotlib.backends.backend_wx import NavigationToolbar2Wx
 from matplotlib.figure import Figure
 
-
+import accomp
 
 spotify = an.spotify_ctrl()
 frame = []
@@ -97,6 +96,9 @@ class CanvasPanel(wx.Panel):
 
 def main():
 	global frame, plotpanel
+	
+	accomp.start()
+	
 	ex = wx.App()
 	f = fb_ui.AccCtrl(None)
 	frame = f
@@ -124,6 +126,7 @@ def update(obj):
 	global spotify, frame, string, url, last_track_id, track_name
 	d = spotify.current_playback()
 	current_track_id = d['item']['id']
+
 	track_name = d['item']['name']
 	caption = current_track_id+'\n'+d['item']['name']+'\n'+d['item']['album']['name']+'\n'+ ', '.join([a['name'] for a in d['item']['album']['artists']])
 	smallest = min([i['height'] for i in d['item']['album']['images']])
@@ -137,6 +140,8 @@ def update(obj):
 	frame.m_bitmap1.SetBitmap(bmp)
 	if not current_track_id==last_track_id:
 		last_track_id=current_track_id
+		accomp.setup(current_track_id)
+		accomp.play()
 		plotpanel.draw(current_track_id)
 	
 	
