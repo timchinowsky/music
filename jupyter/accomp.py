@@ -43,10 +43,16 @@ note=60
 newnote=60
 patch_rhythm = 115
 patch_harmony = 90
+patch_rhythm_new = 115
+patch_harmony_new = 90
+
 notelist = set([])
 d_seq = None
 start_time = None
 d_func = None
+time_last=None
+
+pitches = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
 def setup(trackid):
 	global dd_snds, dd_tabs, dd_seq, dd_amp, beat_space, a, rm, patch_rhythm, patch_harmony, d_seq, d_func
@@ -56,7 +62,7 @@ def setup(trackid):
 	dd_seq = Seq(time=1, seq=[0], onlyonce=True)
 	dd_amp = TrigEnv(dd_seq, dd_tabs, dur=.25, mul=.25).out()
 	a=an.analyze(trackid)
-	a = an.pick_events(a, [['action', ['start', 'stop']], ['type',['beats','sections']]])
+	a = an.pick_events(a, [['action', ['start', 'stop']], ['type',['beats','sections','segments']]])
 	beat_space = list(np.diff(np.array([e['time'] for e in a])))+[0.0] 
 	# Seq seems to ignore the last value in its seq list - needed to add this dummy 0 at end to get all beats
 
@@ -82,13 +88,21 @@ def play():
 	d_seq.play(delay=a[0]['time'])
 	
 def seq_callback(id, data1=None, data2=None):  
-	global ii, patch, vol, s, note, newnote, a, start_time, patch_harmony, patch_rhythm, notelist, dd_seq
+	global ii, patch, vol, s, note, newnote, a, start_time, patch_harmony, patch_rhythm, notelist, dd_seq, time_last, patch_harmony_new, patch_rhythm_new, pitches
 	# dd_seq.play()
+	if not patch_harmony_new == patch_harmony or not patch_rhythm_new == patch_rhythm:
+		patch_rhythm = patch_rhythm_new
+		patch_harmony = patch_harmony_new
+		s.programout(patch_harmony,2)
+		s.programout(patch_rhythm,1)
 	if id=='sequence':
 		an.show(str(ii)+' time '+str(a[ii]['time']))
+		time_last = int(np.floor(a[ii]['time']*1000))
 		# an.show(str(time.time()-start_time))
 		for e in a[ii]['event']:
 		# an.show(e['type']+' '+e['action'])
+			if e['type']=='segments':
+				pitches = e['etc']['pitches']
 			if e['type']=='beats':
 				if e['action']=='start': 
 					dd_seq.play()
